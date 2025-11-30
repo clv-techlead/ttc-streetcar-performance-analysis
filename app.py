@@ -29,7 +29,7 @@ st.markdown("*Strategic data-driven insights for streetcar operations management
 # Load data
 @st.cache_data
 def load_data():
-    df = pd.read_csv('data/ttc_feature_engineered_2014_2025.csv')
+    df = pd.read_csv('data/TTC_Feature_Engineered_2014_2025.csv')
     return df
 
 
