@@ -440,7 +440,7 @@ Analyzing TTC streetcar incidents to provide actionable insights for transit ope
 ---
 
 
-**Created by:** clv-lead (J.W.)  
+**Created by:** clv-techlead (J.W.)  
 **Portfolio Project**
 
 
