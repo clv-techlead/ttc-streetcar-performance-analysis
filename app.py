@@ -499,7 +499,7 @@ with tab3:
         )
     
     # Cost-benefit analysis
-    st.subheader("💰 Cost-Benefit Estimate")
+    st.subheader("Cost-Benefit Estimate")
     
     crew_cost_per_hour = 50
     hours_deployed = scenario_time_end - scenario_time_start
@@ -587,7 +587,7 @@ priority_df = pd.DataFrame(priority_data).sort_values('priority_score', ascendin
 
 
 # Display top priorities
-st.markdown("### 🎯 Top 20 Priority Intervention Areas")
+st.markdown("### Top 20 Priority Intervention Areas")
 st.markdown("*Routes and times where resource allocation would have the highest impact*")
 
 
@@ -608,7 +608,7 @@ st.dataframe(
 
 
 # Resource allocation recommendations
-st.markdown("### 💡 Recommended Resource Allocation")
+st.markdown("### Recommended Resource Allocation")
 st.markdown("*Detailed action plans for top 5 priority areas*")
 
 
@@ -645,7 +645,7 @@ for idx, row in priority_df.head(5).iterrows():
 
 
 # Summary visualization
-st.markdown("### 📈 Priority Distribution by Hour")
+st.markdown("### Priority Distribution by Hour")
 
 
 hourly_priority = priority_df.groupby('hour')['priority_score'].sum().reset_index()
@@ -675,8 +675,6 @@ st.plotly_chart(fig, use_container_width=True)
 
 
 # Key insights
-st.markdown("### 💼 Executive Summary")
-
 
 top_hour = hourly_priority.loc[hourly_priority['priority_score'].idxmax(), 'hour']
 top_routes = priority_df.groupby('route')['priority_score'].sum().sort_values(ascending=False).head(3)
