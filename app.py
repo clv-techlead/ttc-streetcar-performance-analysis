@@ -499,7 +499,7 @@ with tab3:
         )
     
     # Cost-benefit analysis
-    st.subheader("Cost-Benefit Estimate")
+    st.markdown("**Cost-Benefit Estimate**")
     
     crew_cost_per_hour = 50
     hours_deployed = scenario_time_end - scenario_time_start
@@ -644,12 +644,11 @@ for idx, row in priority_df.head(5).iterrows():
         """)
 
 
+st.markdown("---")
 # Summary visualization
 st.markdown("### Priority Distribution by Hour")
 
-
 hourly_priority = priority_df.groupby('hour')['priority_score'].sum().reset_index()
-
 
 fig = px.area(
     hourly_priority,
@@ -681,7 +680,7 @@ top_routes = priority_df.groupby('route')['priority_score'].sum().sort_values(as
 
 
 st.info(f"""
-### Key Findings:
+### 💡 Key Findings:
 - Highest priority hour: **{int(top_hour)}:00** (deploy maximum resources)
 - Top 3 routes requiring attention: **{', '.join(top_routes.index.tolist())}**
 - Total high-priority incidents: **{priority_df.head(20)['incidents'].sum():,.0f}**
