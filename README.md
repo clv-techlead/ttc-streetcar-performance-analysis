@@ -1,4 +1,4 @@
-# TTC Streetcar Operational Intelligence Dashboard
+# 🚊TTC Streetcar Operational Intelligence Dashboard
 
 An interactive dashboard analyzing 11 years of Toronto Transit Commission streetcar incident data (2014-2025) to provide actionable operational insights and strategic resource allocation recommendations.
 
@@ -108,3 +108,4 @@ Feedback and suggestions welcome! Feel free to open an issue or submit a pull re
 This project is available for portfolio and educational purposes.
 
 **Created by:** @clv-techlead (J.W.)
+
