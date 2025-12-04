@@ -251,7 +251,7 @@ selected_deep_dive_route = st.selectbox(
 
 
 # Create tabs for different time periods
-tab1, tab2 = st.tabs(["🌅 Morning Rush (5-9 AM)", "☀️ Afternoon Rush (1-6 PM)"])
+tab1, tab2, tab3 = st.tabs(["🌅 Morning Rush (5-9 AM)", "☀️ Afternoon Rush (1-6 PM)", "🎯 What-If Scenarios"])
 
 
 # Helper function to generate smart recommendations
@@ -422,6 +422,275 @@ with tab2:
     else:
         st.warning(f"No Route {selected_deep_dive_route} data found for afternoon hours")
 
+# ============================================================================
+# What-If Scenario Planning Tab
+# ============================================================================
+# TAB 3: What-If Scenario Analysis
+with tab3:
+    st.markdown(f"**Scenario Planning for Route {selected_deep_dive_route}**")
+    st.markdown("""
+    Use this tool to estimate the impact of operational changes.
+    **Note:** Estimates based on historical patterns, not guaranteed outcomes.
+    """)
+    
+    # Scenario inputs
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        scenario_time_start = st.slider("Time Window Start", 0, 23, 5, key="scenario_start")
+        scenario_time_end = st.slider("Time Window End", scenario_time_start, 23, 9, key="scenario_end")
+        
+    with col2:
+        intervention_type = st.selectbox(
+            "Intervention Type",
+            ["Additional Maintenance Crew", "Pre-Service Inspection", "Backup Vehicle"]
+        )
+        intervention_strength = st.slider(
+            "Intervention Level",
+            min_value=1,
+            max_value=10,
+            value=5,
+            help="1 = minimal, 10 = maximum resource allocation"
+        )
+    
+    # Calculate scenario
+    baseline_incidents = df[
+        (df['route'] == selected_deep_dive_route) &
+        (df['hour'].between(scenario_time_start, scenario_time_end))
+    ]
+    
+    baseline_count = len(baseline_incidents)
+    baseline_high_severity = (baseline_incidents['delay_bin'].isin(['High', 'Severe'])).sum()
+    
+    # Estimation model
+    impact_factor = {
+        "Additional Maintenance Crew": 0.15,
+        "Pre-Service Inspection": 0.20,
+        "Backup Vehicle": 0.10
+    }
+    
+    estimated_reduction = int(baseline_count * impact_factor[intervention_type] * (intervention_strength / 10))
+    estimated_severity_reduction = int(baseline_high_severity * impact_factor[intervention_type] * (intervention_strength / 10) * 1.5)
+    
+    # Display results
+    st.subheader("📊 Estimated Impact")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric(
+            "Baseline Incidents",
+            baseline_count
+        )
+    
+    with col2:
+        st.metric(
+            "Estimated After Intervention",
+            baseline_count - estimated_reduction,
+            delta=f"-{estimated_reduction} incidents",
+            delta_color="inverse"
+        )
+    
+    with col3:
+        reduction_pct = (estimated_reduction / baseline_count) * 100 if baseline_count > 0 else 0
+        st.metric(
+            "Estimated Reduction",
+            f"{reduction_pct:.1f}%"
+        )
+    
+    # Cost-benefit analysis
+    st.subheader("💰 Cost-Benefit Estimate")
+    
+    crew_cost_per_hour = 50
+    hours_deployed = scenario_time_end - scenario_time_start
+    intervention_cost = crew_cost_per_hour * hours_deployed * intervention_strength * 30
+    
+    incident_cost = 500
+    savings = estimated_reduction * incident_cost * 30
+    
+    roi = ((savings - intervention_cost) / intervention_cost) * 100 if intervention_cost > 0 else 0
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.metric("Monthly Intervention Cost", f"${intervention_cost:,}")
+        st.metric("Estimated Monthly Savings", f"${savings:,}")
+    
+    with col2:
+        st.metric("Net Monthly Benefit", f"${savings - intervention_cost:,}")
+        st.metric("ROI", f"{roi:.1f}%")
+    
+    if roi > 0:
+        st.success(f"**Positive ROI:** This intervention is estimated to save **${savings - intervention_cost:,}/month**")
+    else:
+        st.warning("**Negative ROI:** Consider adjusting intervention level or exploring alternative approaches")
+    
+    # Visual comparison
+    st.subheader("📉 Before vs After Comparison")
+    
+    comparison_data = pd.DataFrame({
+        'Scenario': ['Baseline', 'With Intervention'],
+        'Total Incidents': [baseline_count, baseline_count - estimated_reduction],
+        'High Severity': [baseline_high_severity, baseline_high_severity - estimated_severity_reduction]
+    })
+    
+    fig = px.bar(
+        comparison_data,
+        x='Scenario',
+        y=['Total Incidents', 'High Severity'],
+        barmode='group',
+        title="Projected Impact of Intervention",
+        color_discrete_sequence=['#e67e22', '#c0392b']
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+# ============================================================================
+# Resource Allocation Recommendations Section
+# ============================================================================
+# Resource Allocation Recommendations
+st.markdown("---")
+st.subheader("📊 Data-Driven Resource Planning")
+
+
+st.markdown("""
+This section identifies the highest-priority route-time combinations where interventions 
+would have the greatest impact on reducing incidents and delays.
+""")
+
+
+# Calculate priority score for each route-time combination
+priority_data = []
+
+
+for route in df['route'].unique():
+    for hour in range(24):
+        subset = df[(df['route'] == route) & (df['hour'] == hour)]
+        if len(subset) > 0:
+            incident_count = len(subset)
+            severity_score = (subset['delay_bin'] == 'Severe').sum() * 3 + \
+                            (subset['delay_bin'] == 'High').sum() * 2 + \
+                            (subset['delay_bin'] == 'Medium').sum() * 1
+            
+            # Priority score weighs both volume and severity
+            priority_score = incident_count * 0.6 + severity_score * 0.4
+            
+            priority_data.append({
+                'route': route,
+                'hour': hour,
+                'incidents': incident_count,
+                'severity_score': severity_score,
+                'priority_score': priority_score
+            })
+
+
+priority_df = pd.DataFrame(priority_data).sort_values('priority_score', ascending=False)
+
+
+# Display top priorities
+st.markdown("### 🎯 Top 20 Priority Intervention Areas")
+st.markdown("*Routes and times where resource allocation would have the highest impact*")
+
+
+# Format the dataframe for display
+display_df = priority_df.head(20).copy()
+display_df['priority_score'] = display_df['priority_score'].round(1)
+display_df.columns = ['Route', 'Hour', 'Incidents', 'Severity Score', 'Priority Score']
+
+
+st.dataframe(
+    display_df.style.background_gradient(
+        subset=['Priority Score'],
+        cmap='OrRd'
+    ),
+    use_container_width=True,
+    height=400
+)
+
+
+# Resource allocation recommendations
+st.markdown("### 💡 Recommended Resource Allocation")
+st.markdown("*Detailed action plans for top 5 priority areas*")
+
+
+for idx, row in priority_df.head(5).iterrows():
+    with st.expander(f"🚊 Route {row['route']} at {int(row['hour'])}:00 - Priority Score: {row['priority_score']:.1f}"):
+        
+        # Calculate recommended resources
+        crew_members = int(row['incidents'] / 30) + 1
+        estimated_reduction = int(row['incidents'] * 0.2)
+        severity_reduction = int(row['severity_score'] * 0.25)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**📋 Current Situation:**")
+            st.write(f"- Historical incidents: **{int(row['incidents'])}**")
+            st.write(f"- Severity score: **{row['severity_score']:.1f}**")
+            st.write(f"- Time window: **{int(row['hour'])}:00-{int(row['hour'])+1}:00**")
+        
+        with col2:
+            st.markdown("**🎯 Estimated Impact:**")
+            st.write(f"- Potential reduction: **{estimated_reduction} incidents**")
+            st.write(f"- Severity reduction: **{severity_reduction} points**")
+            st.write(f"- Impact percentage: **{(estimated_reduction/row['incidents']*100):.0f}%**")
+        
+        st.markdown("**🔧 Recommended Actions:**")
+        st.write(f"""
+        1.  Deploy **{crew_members} additional maintenance crew members**
+        2.  Pre-position backup vehicle by **{int(row['hour']) - 1}:30**
+        3.  Enhanced pre-service inspection for vehicles on this route
+        4.  Real-time monitoring during **{int(row['hour'])-1}:00-{int(row['hour'])+2}:00** window
+        5.  Dedicated dispatcher support during peak period
+        """)
+
+
+# Summary visualization
+st.markdown("### 📈 Priority Distribution by Hour")
+
+
+hourly_priority = priority_df.groupby('hour')['priority_score'].sum().reset_index()
+
+
+fig = px.area(
+    hourly_priority,
+    x='hour',
+    y='priority_score',
+    labels={'hour': 'Hour of Day', 'priority_score': 'Total Priority Score'},
+    title="When to Deploy Resources (Higher = More Critical)",
+    color_discrete_sequence=['#e67e22']
+)
+
+
+fig.update_layout(
+    xaxis=dict(
+        tickmode='linear',
+        tick0=0,
+        dtick=2
+    ),
+    height=400
+)
+
+
+st.plotly_chart(fig, use_container_width=True)
+
+
+# Key insights
+st.markdown("### 💼 Executive Summary")
+
+
+top_hour = hourly_priority.loc[hourly_priority['priority_score'].idxmax(), 'hour']
+top_routes = priority_df.groupby('route')['priority_score'].sum().sort_values(ascending=False).head(3)
+
+
+st.info(f"""
+### Key Findings:
+- Highest priority hour: **{int(top_hour)}:00** (deploy maximum resources)
+- Top 3 routes requiring attention: **{', '.join(top_routes.index.tolist())}**
+- Total high-priority incidents: **{priority_df.head(20)['incidents'].sum():,.0f}**
+- Potential impact: Addressing top 20 areas could reduce **{int(priority_df.head(20)['incidents'].sum() * 0.2):,.0f} incidents/year**
+""")
+
+
 # About section in sidebar
 st.sidebar.markdown("---")
 st.sidebar.header("About")
@@ -442,7 +711,6 @@ Analyzing TTC streetcar incidents to provide actionable insights for transit ope
 
 **Created by:** clv-techlead (J.W.)  
 **Portfolio Project**
-
 
 *Built with Streamlit & Python*
 """)
