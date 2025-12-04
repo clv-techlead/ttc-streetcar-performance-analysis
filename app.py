@@ -473,7 +473,7 @@ with tab3:
     estimated_severity_reduction = int(baseline_high_severity * impact_factor[intervention_type] * (intervention_strength / 10) * 1.5)
     
     # Display results
-    st.subheader("📊 Estimated Impact")
+    st.subheader("Estimated Impact")
     
     col1, col2, col3 = st.columns(3)
     
@@ -524,9 +524,10 @@ with tab3:
         st.success(f"**Positive ROI:** This intervention is estimated to save **${savings - intervention_cost:,}/month**")
     else:
         st.warning("**Negative ROI:** Consider adjusting intervention level or exploring alternative approaches")
-    
+
+    st.markdown("  ")
     # Visual comparison
-    st.subheader("📉 Before vs After Comparison")
+    st.subheader("Before vs After Comparison")
     
     comparison_data = pd.DataFrame({
         'Scenario': ['Baseline', 'With Intervention'],
@@ -680,7 +681,7 @@ top_routes = priority_df.groupby('route')['priority_score'].sum().sort_values(as
 
 
 st.info(f"""
-### 💡 Key Findings:
+### Key Findings:
 - Highest priority hour: **{int(top_hour)}:00** (deploy maximum resources)
 - Top 3 routes requiring attention: **{', '.join(top_routes.index.tolist())}**
 - Total high-priority incidents: **{priority_df.head(20)['incidents'].sum():,.0f}**
